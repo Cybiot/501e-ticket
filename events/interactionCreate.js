@@ -4,21 +4,54 @@ const { Events,
 	TextInputStyle,
 	ActionRowBuilder,
 	MessageFlags,
-	EmbedBuilder
+	EmbedBuilder,
+	ButtonBuilder,
+	ButtonStyle
 } = require('discord.js');
 
 const { canOpenTicket } = require('../utils/antiSpam');
 
+const ARCHIVE_CHANNEL_ID = '1474975474085265429';
 const STAFF_CHANNEL_ID = '716229951548031006';
 
 module.exports = {
 	name: Events.InteractionCreate,
 	async execute(interaction) {
 
-		// Création du message avec le bouton pour ouvrir un ticket
+
 		if (interaction.isButton()) {
+			// Création du message avec le bouton pour ouvrir un ticket
 			if (interaction.customId === 'ticket_open') {
 				await interaction.showModal(buildTicketModal());
+			}
+			// Gestion de la fermeture du ticket
+			if (interaction.customId.startsWith('ticket_close_')) {
+				const userId = interaction.customId.split('_')[2];
+
+				const archiveChannel = interaction.guild.channels.cache.get(ARCHIVE_CHANNEL_ID);
+
+				if (archiveChannel) {
+					const closedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
+						.setTitle('🔒 Ticket clôturé')
+						.setColor(0xed4245)
+						.setFooter({ text: `Clôturé par ${interaction.user.tag} • ${new Date().toLocaleString('fr-FR')}` });
+
+					// Envoie dans le salon d'archive
+					await archiveChannel.send({
+						embeds: [closedEmbed],
+					});
+				}else {
+					console.error(`Ticket : ${userId} - Salon d'archive introuvable !`);
+				}
+
+				// Supprime le message original dans le salon staff
+				await interaction.message.delete();
+
+				// Confirme à l'utilisateur (éphémère car le message est supprimé)
+				await interaction.reply({
+					content: '✅ Ticket clôturé et archivé.',
+					ephemeral: true,
+				});
 			}
 		}
 
@@ -27,7 +60,7 @@ module.exports = {
 			if (interaction.customId === 'ticket_modal') {
 				if (!canOpenTicket(interaction.user.id)) {
 					return interaction.reply({
-						content: "⏳ Tu dois attendre avant d’ouvrir un autre ticket.",
+						content: "⏳ Tu dois attendre 24h avant d’ouvrir un autre ticket.",
 						ephemeral: true
 					});
 				}
@@ -40,7 +73,7 @@ module.exports = {
 
 				if (!staffChannel) {
 					return interaction.reply({
-						content: "❌ Salon staff introuvable. Vérifie l'ID.",
+						content: "Un problème est survenu lors de la création du ticket. Le salon de staff est introuvable.",
 						ephemeral: true,
 					});
 				}
@@ -58,13 +91,22 @@ module.exports = {
 						{ name: 'Utilisateur', value: `${interaction.user}`, inline: false },
 						{ name: 'Âge', value: age, inline: true },
 						{ name: 'Heures', value: hours, inline: true },
-						{ name: 'Nom RP', value: rpname, inline: false },
+						{ name: 'Nom RP', value: rpname || 'Non renseigné', inline: false },
 					)
 					.setColor(0x57f287);
+
+
+				const closeButton = new ButtonBuilder()
+					.setCustomId(`ticket_close_${interaction.user.id}`)
+					.setLabel('🔒 Clôturer le ticket')
+					.setStyle(ButtonStyle.Danger);
+
+				const buttonRow = new ActionRowBuilder().addComponents(closeButton);
 
 				await staffChannel.send({
 					content: `Nouveau ticket de ${interaction.user}`,
 					embeds: [embed],
+					components: [buttonRow],
 				});
 
 				if (interaction.replied || interaction.deferred) {
@@ -117,18 +159,19 @@ function buildTicketModal() {
 
 	const ageInput = new TextInputBuilder()
 		.setCustomId('ageInput')
-		.setLabel("Quel est votre âge ?")
+		.setLabel("Quel est ton âge ?")
 		.setStyle(TextInputStyle.Short);
 
 	const hoursInput = new TextInputBuilder()
 		.setCustomId('hoursInput')
-		.setLabel("Heures de jeu ?")
+		.setLabel("Combien as-tu d'heures de jeu ?")
 		.setStyle(TextInputStyle.Short);
 
 	const nameInput = new TextInputBuilder()
 		.setCustomId('nameInput')
-		.setLabel("Nom RP ?")
-		.setStyle(TextInputStyle.Short);
+		.setLabel("As-tu déjà un nom RP ? Si oui, lequel ?")
+		.setStyle(TextInputStyle.Short)
+		.setRequired(false);
 
 	modal.addComponents(
 		new ActionRowBuilder().addComponents(ageInput),
