@@ -11,8 +11,10 @@ const { Events,
 
 const { canOpenTicket } = require('../utils/antiSpam');
 
-const ARCHIVE_CHANNEL_ID = '1474975474085265429';
-const STAFF_CHANNEL_ID = '716229951548031006';
+// const ARCHIVE_CHANNEL_ID = '1474975474085265429';
+// const STAFF_CHANNEL_ID = '716229951548031006';
+const ARCHIVE_CHANNEL_ID = '1475259486787862641';
+const STAFF_CHANNEL_ID = '1475262427103760444';
 
 module.exports = {
 	name: Events.InteractionCreate,
@@ -81,7 +83,8 @@ module.exports = {
 				const guild = interaction.guild;
 
 				// ID ROLE STAFF A MODIFIER
-				const staffRoleId = '716219155086311445';
+				// const staffRoleId = '716219155086311445';
+				const staffRoleId = '897514660297850911';
 
 				console.log(interaction.user.id);
 

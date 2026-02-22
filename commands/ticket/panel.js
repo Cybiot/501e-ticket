@@ -15,7 +15,7 @@ module.exports = {
 
 		const embed = new EmbedBuilder()
 			.setTitle('🎫 Support')
-			.setDescription('Clique sur le bouton pour ouvrir un ticket.')
+			.setDescription('Clique sur le bouton pour .')
 			.setColor(0x2b2d31);
 
 		const button = new ButtonBuilder()
