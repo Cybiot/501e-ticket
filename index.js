@@ -1,6 +1,19 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
+// const { Client, Collection, GatewayIntentBits } = require('discord.js');
+// const { Client, Collection, GatewayIntentBits, Events, LabelBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
+const {
+	Client,
+	Collection,
+	GatewayIntentBits,
+	Events,
+	ModalBuilder,
+	TextInputBuilder,
+	TextInputStyle,
+	ActionRowBuilder
+} = require('discord.js');
+
+
 const { token } = require('./config.json');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -35,5 +48,22 @@ for (const file of eventFiles) {
 		client.on(event.name, (...args) => event.execute(...args));
 	}
 }
+
+client.on(Events.InteractionCreate, async interaction => {
+
+	if (interaction.isModalSubmit()) {
+
+		if (interaction.customId === 'myModal') {
+			const age = interaction.fields.getTextInputValue('ageInput');
+			const hours = interaction.fields.getTextInputValue('hoursInput');
+			const name = interaction.fields.getTextInputValue('nameInput');
+
+			await interaction.reply({
+				content: `Ton âge : ${age}\nHeures de jeu : ${hours}\nNom RP : ${name}`,
+				ephemeral: true
+			});
+		}
+	}
+});
 
 client.login(token);
