@@ -14,14 +14,11 @@ module.exports = {
 	async execute(interaction) {
 
 		const embed = new EmbedBuilder()
-			.setTitle('🎫 Support')
+			.setTitle('🎫 Demander son affectation')
 			.setDescription(`
-				tiens pour le message : 
-
-				Demander son affectation
 				Bonjour volontaire !
 
-				Si tu souhaites rejoindre notre régiment, avant toute chose, je t'invite à lire le message suivant : <#716749920488521761>
+				Si tu souhaites rejoindre notre régiment, avant toute chose, je t'invite à lire le message suivant : <#482601015070425113>
 
 				Ensuite, il te suffit de soumettre ton dossier en cliquant sur l'icône ci-dessous en répondant d'abord à quelques questions.
 
