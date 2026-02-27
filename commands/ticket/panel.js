@@ -9,15 +9,10 @@ const {
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ticket-panel')
-		.setDescription('Publier le panneau de ticket'),
+		.setDescription('Publier le panneau de ticket')
+    	.setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
 	async execute(interaction) {
-		if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-			return interaction.reply({
-				content: "❌ Tu n'as pas la permission d'utiliser cette commande.",
-				ephemeral: true
-			});
-		}
 		const embed = new EmbedBuilder()
 			.setTitle('🎫 Demander son affectation')
 			.setDescription(`
