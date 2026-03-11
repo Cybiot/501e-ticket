@@ -1,4 +1,5 @@
-const { Events,
+const {
+	Events,
 	ModalBuilder,
 	TextInputBuilder,
 	TextInputStyle,
@@ -6,15 +7,21 @@ const { Events,
 	MessageFlags,
 	EmbedBuilder,
 	ButtonBuilder,
-	ButtonStyle
+	ButtonStyle,
+	ChannelType,
+	PermissionFlagsBits
 } = require('discord.js');
 
 const { canOpenTicket } = require('../utils/antiSpam');
 
-// const ARCHIVE_CHANNEL_ID = '1474975474085265429';
-// const STAFF_CHANNEL_ID = '716229951548031006';
-const ARCHIVE_CHANNEL_ID = '1475259486787862641';
-const STAFF_CHANNEL_ID = '1475262427103760444';
+// const ARCHIVE_CHANNEL_ID = '1474975474085265429';  // Test 
+// const STAFF_CHANNEL_ID = '1480360284957835394';     // Test
+// const TICKET_CATEGORY_ID = '1480357603392487477'; // Test
+// const STAFF_ROLE_ID = '716219155086311445'; // Test
+const ARCHIVE_CHANNEL_ID = '1475259486787862641';  // 501e
+const STAFF_CHANNEL_ID = '1475262427103760444';    // 501e
+const TICKET_CATEGORY_ID = '479704642163310593'; // 501e
+const STAFF_ROLE_ID = '897514660297850911';  // 501e
 
 module.exports = {
 	name: Events.InteractionCreate,
@@ -28,7 +35,8 @@ module.exports = {
 			}
 			// Gestion de la fermeture du ticket
 			if (interaction.customId.startsWith('ticket_close_')) {
-				const userId = interaction.customId.split('_')[2];
+				const ticketChannelId = interaction.customId.split('_')[2];
+				const ticketChannel = interaction.guild.channels.cache.get(ticketChannelId);
 
 				const archiveChannel = interaction.guild.channels.cache.get(ARCHIVE_CHANNEL_ID);
 
@@ -42,18 +50,38 @@ module.exports = {
 					await archiveChannel.send({
 						embeds: [closedEmbed],
 					});
-				}else {
+				} else {
 					console.error(`Ticket : ${userId} - Salon d'archive introuvable !`);
+				}
+
+
+				if (ticketChannel) {
+					await interaction.reply({
+						content: "🔒 Fermeture du ticket...",
+						ephemeral: true
+					});
+
+					// Supprime le salon du ticket après un délai pour laisser le temps de lire le message de clôture
+					setTimeout(() => {
+						ticketChannel.delete().catch(console.error);
+					}, 3000);
+				} else {
+					return interaction.reply({
+						content: "Un problème est survenu lors de la clôture du ticket. Le salon du ticket est introuvable.",
+						ephemeral: true,
+					});
 				}
 
 				// Supprime le message original dans le salon staff
 				await interaction.message.delete();
 
-				// Confirme à l'utilisateur (éphémère car le message est supprimé)
-				await interaction.reply({
+				// Confirme à l'utilisateur la suppression
+				await interaction.followUp({
 					content: '✅ Ticket clôturé et archivé.',
 					ephemeral: true,
 				});
+
+
 			}
 		}
 
@@ -71,23 +99,6 @@ module.exports = {
 				const hours = interaction.fields.getTextInputValue('hoursInput');
 				const rpname = interaction.fields.getTextInputValue('nameInput');
 
-				const staffChannel = interaction.guild.channels.cache.get(STAFF_CHANNEL_ID);
-
-				if (!staffChannel) {
-					return interaction.reply({
-						content: "Un problème est survenu lors de la création du ticket. Le salon de staff est introuvable.",
-						ephemeral: true,
-					});
-				}
-
-				const guild = interaction.guild;
-
-				// ID ROLE STAFF A MODIFIER
-				// const staffRoleId = '716219155086311445';
-				const staffRoleId = '897514660297850911';
-
-				console.log(interaction.user.id);
-
 				const embed = new EmbedBuilder()
 					.setTitle('📩 Nouveau ticket')
 					.addFields(
@@ -98,9 +109,54 @@ module.exports = {
 					)
 					.setColor(0x57f287);
 
+				const ticketChannel = await interaction.guild.channels.create({
+					name: `ticket-${interaction.user.username}`,
+					type: ChannelType.GuildText,
+					parent: TICKET_CATEGORY_ID,
+
+					permissionOverwrites: [
+						{
+							id: interaction.guild.roles.everyone,
+							deny: [PermissionFlagsBits.ViewChannel],
+						},
+						{
+							id: interaction.user.id,
+							allow: [
+								PermissionFlagsBits.ViewChannel,
+								PermissionFlagsBits.SendMessages,
+								PermissionFlagsBits.ReadMessageHistory
+							],
+						},
+						{
+							id: STAFF_ROLE_ID,
+							allow: [
+								PermissionFlagsBits.ViewChannel,
+								PermissionFlagsBits.SendMessages,
+								PermissionFlagsBits.ReadMessageHistory
+							],
+						},
+					],
+				});
+
+				await ticketChannel.send({
+					content: `🎫 Ticket ouvert par ${interaction.user} <@&${STAFF_ROLE_ID}>`,
+					embeds: [embed],
+				});
+
+				const staffChannel = interaction.guild.channels.cache.get(STAFF_CHANNEL_ID);
+
+				if (!staffChannel) {
+					return interaction.reply({
+						content: "Un problème est survenu lors de la création du ticket. Le salon de staff est introuvable.",
+						ephemeral: true,
+					});
+				}
+
+				
+
 
 				const closeButton = new ButtonBuilder()
-					.setCustomId(`ticket_close_${interaction.user.id}`)
+					.setCustomId(`ticket_close_${ticketChannel.id}`)
 					.setLabel('🔒 Clôturer le ticket')
 					.setStyle(ButtonStyle.Danger);
 
