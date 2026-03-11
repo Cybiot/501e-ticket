@@ -163,7 +163,7 @@ module.exports = {
 				const buttonRow = new ActionRowBuilder().addComponents(closeButton);
 
 				await staffChannel.send({
-					content: `Nouveau ticket de ${interaction.user}`,
+					content: `Nouveau ticket de ${interaction.user} <@&${STAFF_ROLE_ID}>`,
 					embeds: [embed],
 					components: [buttonRow],
 				});
